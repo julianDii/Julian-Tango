@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">App1</string>
+    <string name="app_name">Roomer</string>
+    <string name="exception_out_of_date">"Tango service outdated!"</string>
 </resources>

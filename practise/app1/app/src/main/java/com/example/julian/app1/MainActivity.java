@@ -1,30 +1,33 @@
 package com.example.julian.app1;
 
 
-import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.widget.Toast;
 
 import com.google.atap.tango.ux.TangoUx;
 import com.google.atap.tango.ux.TangoUxLayout;
 import com.google.atap.tangoservice.Tango;
+import com.google.atap.tangoservice.TangoCameraIntrinsics;
 import com.google.atap.tangoservice.TangoConfig;
 import com.google.atap.tangoservice.TangoCoordinateFramePair;
 import com.google.atap.tangoservice.TangoEvent;
+import com.google.atap.tangoservice.TangoOutOfDateException;
 import com.google.atap.tangoservice.TangoPoseData;
 import com.google.atap.tangoservice.TangoXyzIjData;
 
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
  */
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity  {
 
     /**
      * The Tango Service component.
      */
-    private Tango mTango;
+    private  Tango mTango;
 
     /**
      * The Tango Configuration component.
@@ -34,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * The Tango UX component.
      */
-    public TangoUx mTangoUx;
+    private TangoUx mTangoUx;
 
     /**
      * Teh UX Layout component.
@@ -45,6 +48,15 @@ public class MainActivity extends AppCompatActivity {
      * The params
      */
     private TangoUx.StartParams params;
+
+    /**
+     * Boolean for Tango service is connected or not.
+     */
+    private boolean mIsConnected = false;
+
+    protected static final int ACTIVE_CAMERA_INTRINSICS = TangoCameraIntrinsics.TANGO_CAMERA_COLOR;
+
+    protected AtomicBoolean tangoFrameIsAvailable = new AtomicBoolean(false);
 
     public static final TangoCoordinateFramePair SOS_T_DEVICE_FRAME_PAIR =
             new TangoCoordinateFramePair(
@@ -57,39 +69,54 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
         // Instantiate Tango service
         mTango = new Tango(this);
-       // instantiate Tango UX Framework
+        // instantiate Tango UX Framework
         mTangoUx = new TangoUx(this);
-
-        ArrayList<TangoCoordinateFramePair> framePairs = new ArrayList<>();
-        framePairs.add(SOS_T_DEVICE_FRAME_PAIR);
-        framePairs.add(DEVICE_T_PREVIOUS_FRAME_PAIR);
-        mTango.connectListener(framePairs,listener);
 
         setContentView(R.layout.activity_main);
 
         // set up config
-        tangoConfig();
+        tangoConnect();
 
         // set up Tango UX
         tangoUXLayout();
 
+    }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
 
+        synchronized (this) {
+            if (mIsConnected) {
 
+                mTango.disconnectCamera(TangoCameraIntrinsics.TANGO_CAMERA_COLOR);
+                mTango.disconnect();
+                mIsConnected = false;
+            }
+        }
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
 
-
-        mTango.connect(mConfig);
-
-
+        synchronized (this) {
+            if (!mIsConnected) {
+                try {
+                    tangoConnect();
+                    mIsConnected = true;
+                } catch (TangoOutOfDateException e) {
+                    Toast.makeText(getApplicationContext(), R.string.exception_out_of_date,
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
 
     }
 
@@ -118,13 +145,21 @@ public class MainActivity extends AppCompatActivity {
     /**
      * This method creates a new tango configuration and enable the MotionTracking API
      */
-    private void tangoConfig() {
+    private void tangoConnect() {
 
         mConfig = new TangoConfig();
         mConfig = mTango.getConfig(TangoConfig.CONFIG_TYPE_CURRENT);
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_MOTIONTRACKING, true);
         mConfig.putBoolean(TangoConfig.KEY_BOOLEAN_DEPTH,true);
 
+        ArrayList<TangoCoordinateFramePair> framePairs = new ArrayList<>();
+        framePairs.add(SOS_T_DEVICE_FRAME_PAIR);
+        framePairs.add(DEVICE_T_PREVIOUS_FRAME_PAIR);
+
+        mTango.connectListener(framePairs,listener);
+
+        mTango.connect(mConfig);
+        mIsConnected = true;
     }
 
     Tango.OnTangoUpdateListener listener = new
@@ -168,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
                 public void onTangoEvent(TangoEvent event) {
                     if (mTangoUx != null) {
                         mTangoUx.updateTangoEvent(event);
+
                     }
                 }
 
@@ -178,7 +214,12 @@ public class MainActivity extends AppCompatActivity {
                  */
                 @Override
                 public void onFrameAvailable(int cameraId) {
-                    System.out.println("hello world");
+
+                    if (cameraId == ACTIVE_CAMERA_INTRINSICS) {
+                        tangoFrameIsAvailable.set(true);
+
+                    }
+
                 }
             };
 

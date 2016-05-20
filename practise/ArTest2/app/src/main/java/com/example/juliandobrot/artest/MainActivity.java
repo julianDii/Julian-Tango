@@ -3,9 +3,6 @@ package com.example.juliandobrot.artest;
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.ViewFlipper;
-import android.widget.ViewSwitcher;
-
 import com.google.atap.tango.ux.TangoUx;
 import com.google.atap.tango.ux.TangoUxLayout;
 import com.google.atap.tangoservice.Tango;
@@ -18,17 +15,13 @@ import com.google.atap.tangoservice.TangoEvent;
 import com.google.atap.tangoservice.TangoOutOfDateException;
 import com.google.atap.tangoservice.TangoPoseData;
 import com.google.atap.tangoservice.TangoXyzIjData;
-
-
 import org.rajawali3d.surface.RajawaliSurfaceView;
-
 import java.util.ArrayList;
 
 public class MainActivity extends Activity {
 
 
     private RoomerRender roomerRender;
-
 
     private static final ArrayList<TangoCoordinateFramePair> FRAME_PAIRS =
             new ArrayList<TangoCoordinateFramePair>();
@@ -41,19 +34,10 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "JavaVideoOverlay";
     private TangoCameraPreview tangoCameraPreview;
-
-
-
-
-
     private Tango mTango;
     private TangoUx mTangoUx;
     private boolean mIsConnected = false;
-
-
     private TangoPoseData mpose;
-
-
 
 
     @Override
@@ -89,18 +73,6 @@ public class MainActivity extends Activity {
         mIsConnected = true;
 
 
-
-
-
-        // No need to add any coordinate frame pairs since we are not using
-        // pose data. So just initialize.
-
-
-
-
-
-
-
         mTango.connectListener(FRAME_PAIRS, new Tango.OnTangoUpdateListener() {
 
             @Override
@@ -109,7 +81,6 @@ public class MainActivity extends Activity {
                 if (mTangoUx != null) {
                     mTangoUx.updatePoseStatus(pose.statusCode);
 
-
                 }
 
                 // Update our copy of the latest pose
@@ -117,8 +88,6 @@ public class MainActivity extends Activity {
                 synchronized (this) {
                     mpose = pose;
                 }
-
-
 
             }
 
@@ -178,8 +147,7 @@ public class MainActivity extends Activity {
                         Log.e(TAG, getString(R.string.exception_tango_out_of_date), e);
                     } catch (TangoErrorException e) {
                         Log.e(TAG, getString(R.string.exception_tango_error), e);
-                    }
-                }
+                    }    }
             });
         }
 
@@ -205,7 +173,5 @@ public class MainActivity extends Activity {
         glView.setSurfaceRenderer(renderer);
         return renderer;
     }
-
-
 
 }
